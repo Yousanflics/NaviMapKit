@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "family": "geojson-overlay",
+  "entry": "features.geojson",
+  "sha256": "b8367cd2d79fed9568079a2da583cf6aabf5f03d7763305b21f0a95dbbb1d04b",
+  "featureCount": 4
+}

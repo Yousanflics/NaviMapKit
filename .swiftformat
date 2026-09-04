@@ -1,0 +1,63 @@
+# SwiftFormat configuration for NaviMapKit
+# Enforces safe, best-practice formatting rules.
+
+--swiftversion 6.0
+--indent 4
+--maxwidth 160
+--wraparguments before-first
+--wrapcollections before-first
+--wrapparameters before-first
+
+# Exclude generated / build artifacts
+--exclude **/Generated,**/.build,**/DerivedData
+
+# ── Enabled rules (applied automatically) ─────────────────────────────
+# sortImports            – Alphabetical import ordering
+# consecutiveSpaces      – Remove double/triple spaces
+# blankLinesAtStartOfScope – Remove blank lines after {
+# blankLinesAtEndOfScope – Remove blank lines before }
+# blankLinesBetweenScopes – Ensure blank lines between types/functions
+# redundantReturn        – Remove return in single-expression bodies
+# redundantOptionalBinding – if let x = x → if let x (Swift 5.7+)
+# redundantSelf          – Remove unnecessary self.
+# redundantClosure       – Remove unnecessary closure wrappers
+# redundantType          – Remove redundant type annotations
+# redundantProperty      – Remove properties that just return another value
+# redundantViewBuilder   – Remove @ViewBuilder where not needed
+# trailingCommas         – Add trailing commas in multi-line collections
+# headerFileName         – Ensure header comment filename matches actual filename
+
+# ── Disabled rules (intentionally kept off) ────────────────────────────
+--disable indent
+--disable hoistPatternLet
+--disable conditionalAssignment
+--disable docComments
+--disable andOperator
+--disable wrapPropertyBodies
+--disable wrapFunctionBodies
+--disable wrapLoopBodies
+# Same wrap-bodies family as the three above, default-on since 0.62. They were
+# absent from this list only because they did not exist when it was written —
+# keeping them off preserves the rule set this repo actually adopted. Turning
+# them on is a tree-wide reformat (1199 violations across 188 files) and
+# belongs in its own change.
+--disable wrapIfStatementBodies
+--disable wrapIfExpressionBodies
+# Also new in 0.62. Unlike the wrap rules this one rewrites SwiftUI view code
+# rather than whitespace — a Group is not always redundant, it changes how
+# modifiers apply across multiple children — so adopting it needs a review
+# pass, not a version bump.
+--disable redundantSwiftUIGroup
+--disable preferKeyPath
+--disable preferForLoop
+--disable extensionAccessControl
+--disable unusedArguments
+--disable redundantFileprivate
+--disable environmentEntry
+--disable wrap
+--disable wrapMultilineStatementBraces
+--disable enumNamespaces
+--disable numberFormatting
+--disable genericExtensions
+--disable initCoderUnavailable
+--disable wrapArguments

@@ -1,0 +1,5 @@
+# Known-good fixture for the repository-independence gate.
+# Ordinary SDK vocabulary that must never be flagged: navigation, aviation,
+# airspace, aeronautical, effectivity, generation, capability, degradation.
+# Near-misses that must not match: efbeta, ascend, ascertain, oscent.
+let identifier = "navimapkit.capability.volume"

@@ -1,0 +1,16 @@
+# api-stability allowlist: exact digester messages approved as intentional.
+# Every entry needs a review rationale in the change that adds it (0.x escape
+# valve). Package-access symbols appear in digester dumps even though they are
+# invisible to SDK consumers — such entries are recorded here with a [package]
+# rationale.
+#
+# Empty. The baseline tag is this repository's first commit, so no approved
+# breakage exists yet. Entries carried over from an earlier baseline were
+# removed rather than kept: an entry no longer reachable from the current
+# baseline can never be needed again, but it still acts as a filter, and any
+# future breakage whose digester message happens to contain that text would be
+# silenced without a trace.
+#
+# Comments and blank lines here are stripped before the file is used as a
+# pattern list. They are not comments to `grep -f` — a blank line is an empty
+# pattern, which matches everything and would silence the gate entirely.

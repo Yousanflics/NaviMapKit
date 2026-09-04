@@ -1,0 +1,51 @@
+# NavMapExample — the acceptance example app.
+# The app target compiles the FROZEN ideal file itself: the acceptance test
+# is that NavMapExampleIdeal.swift builds and runs against the real SDK,
+# unmodified. Generate with `xcodegen` in this directory (the .xcodeproj is
+# gitignored; project.yml is the source of truth).
+name: NavMapExample
+options:
+  bundleIdPrefix: com.navimapkit.examples
+  deploymentTarget:
+    iOS: "18.0"
+packages:
+  NaviMapKit:
+    path: ../..
+targets:
+  NavMapExample:
+    type: application
+    platform: iOS
+    sources:
+      - path: NavMapExampleIdeal.swift
+      - path: Content
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: NaviMapKit
+        product: NaviAviationMapKit
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        INFOPLIST_FILE: Info.plist
+        CODE_SIGNING_ALLOWED: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+        # Resolved from the shell environment when xcodegen runs; the value
+        # lands only in the gitignored .xcodeproj, never in the repo.
+        MAPBOX_PUBLIC_TOKEN: ${MAPBOX_PUBLIC_TOKEN}
+  # Measurement rig for the exit criteria (60fps follow-camera load);
+  # the frozen acceptance artifact stays the NavMapExample target above.
+  NavMapPerfHarness:
+    type: application
+    platform: iOS
+    sources:
+      - path: PerfHarness
+    dependencies:
+      - package: NaviMapKit
+        product: NaviAviationMapKit
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        INFOPLIST_FILE: Info.plist
+        CODE_SIGNING_ALLOWED: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+        MAPBOX_PUBLIC_TOKEN: ${MAPBOX_PUBLIC_TOKEN}

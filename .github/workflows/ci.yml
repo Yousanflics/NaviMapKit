@@ -1,0 +1,133 @@
+# NaviMapKit CI (docs/03-implementation-details.md §2).
+#
+# Reality note vs the doc's `swift build` wording: _PrimaryVectorRuntime
+# depends on MapboxMaps (iOS-only), so the full graph builds via xcodebuild
+# with an iOS Simulator destination; plain `swift build` covers the portable
+# targets (Core/Scene/Offline/Navigation/Testing). Flagged for review in P1.
+#
+# Mapbox binary downloads require a repo secret MAPBOX_DOWNLOAD_TOKEN written
+# to ~/.netrc — wire it when the private remote exists.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Mapbox download token
+        run: |
+          printf 'machine api.mapbox.com\nlogin mapbox\npassword %s\n' "$MAPBOX_DOWNLOAD_TOKEN" > ~/.netrc
+          chmod 600 ~/.netrc
+        env:
+          MAPBOX_DOWNLOAD_TOKEN: ${{ secrets.MAPBOX_DOWNLOAD_TOKEN }}
+      - name: Build portable targets (host)
+        run: |
+          swift build --target NaviMapCore --target NaviMapScene \
+            --target NaviMapOffline --target NaviMapNavigation \
+            --target NaviMapTesting
+      - name: Build full graph (iOS Simulator, Debug + Release)
+        run: |
+          xcodebuild -scheme NaviMapKit-Package \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug build
+          xcodebuild -scheme NaviMapKit-Package \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Release build
+      - name: Test (iOS Simulator)
+        # Pick whatever iPhone simulator the runner actually has instead of
+        # hardcoding a device name (local machines differ from GH runners).
+        run: |
+          DEVICE=$(xcrun simctl list devices available | grep -oE 'iPhone [^(]+' | head -1 | xargs)
+          echo "Using simulator: $DEVICE"
+          xcodebuild -scheme NaviMapKit-Package \
+            -destination "platform=iOS Simulator,name=$DEVICE" \
+            test
+
+  strict-concurrency:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert no language-mode downgrade
+        run: |
+          ! grep -E 'swiftLanguageModes.*\.v5|swiftLanguageMode\(.v5\)' Package.swift
+          grep -q 'swiftLanguageModes: \[.v6\]' Package.swift
+
+  provider-isolation:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check-provider-isolation.sh
+      - name: Comment independence (no design-document references in code)
+        run: scripts/check-comment-independence.sh
+      - name: Repository independence (no consumer, ticket, or CJK traces)
+        # The message scan needs an explicit range: in a push checkout HEAD is
+        # origin/main, so the default local range would select zero commits and
+        # pass vacuously. A zero-range is an error, not a pass.
+        run: |
+          before='${{ github.event.before }}'
+          if [ -n "${{ github.event.pull_request.base.sha }}" ]; then
+            range='${{ github.event.pull_request.base.sha }}..${{ github.sha }}'
+          elif [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            range='-30'
+          else
+            range="$before..${{ github.sha }}"
+          fi
+          echo "commit-message range: $range"
+          scripts/check-repository-independence.sh --range "$range"
+      - name: Default arguments evaluate nothing on main-actor types
+        run: |
+          scripts/check-default-arguments.py --self-test
+          scripts/check-default-arguments.py
+      - name: Symbol graph audit (provider refs + api-optionals)
+        run: |
+          mkdir -p .symbolgraphs
+          # Emission wired at P2 when public symbols exist; audit script
+          # passes explicitly on empty input until then.
+          scripts/check-symbol-graph.py .symbolgraphs
+
+  compile-policy:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check-compile-policy.sh
+
+  api-stability:
+    runs-on: macos-15
+    steps:
+      # Full history + tags: the digester builds a baseline worktree at the
+      # latest v* tag; a shallow checkout has neither.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure Mapbox download token
+        run: |
+          printf 'machine api.mapbox.com\nlogin mapbox\npassword %s\n' "$MAPBOX_DOWNLOAD_TOKEN" > ~/.netrc
+          chmod 600 ~/.netrc
+        env:
+          MAPBOX_DOWNLOAD_TOKEN: ${{ secrets.MAPBOX_DOWNLOAD_TOKEN }}
+      - run: scripts/check-api-stability.sh
+
+  time-conversion-report:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/report-time-conversions.sh
+
+  lint:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: SwiftFormat lint
+        run: swiftformat --lint .
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: SwiftLint strict
+        run: swiftlint lint --strict
+      - name: Whitespace check
+        run: git diff --check
